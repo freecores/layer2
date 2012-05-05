@@ -35,7 +35,7 @@ void upload() {
    uchar state;         // Flash state.
    uint size;           // Image size.
    uint step;           // Progress bar step size.
-   uint cval;           //
+   uint cval;           // Current progress value.
 
    // Clear screen.
    cls();
@@ -114,15 +114,51 @@ void upload() {
          return 0;
       }
    }
-
+   
    // Copy flash data to DDR2 memory.
    // NOTE: Missing bytes, if binary file is not 4 bytes aligned.
-   for(uint i=0; i < (size / 4) /* + 1 */; i++) {
-      DDR_ADDRESS[i] = flash_read(i);
-   }
+   // for(uint i=0; i < (size / 4) /* + 1 */; i++) {
+      // DDR_ADDRESS[i] = flash_read(i);
+   // }
 
    // Go back to main menu.
    boot();
+}
+
+
+/******************************************************************************
+ * DDR Load View                                                              *
+ ******************************************************************************/
+/* Load Flash contents into DDR. */
+void load() {
+
+   uint step;           // Progress bar step size.
+   uint cval;           // Current progress value.
+   
+   cls();
+
+   // User Upload Menu.
+   drawWindow(&wDDRUpload);
+
+   // Upload Initialization.
+   pbUpload.val = 0;   
+   drawProgressBar(&wDDRUpload, &pbUpload);
+   
+   step = FLASH_BLOCK_SIZE * 2;
+   cval = step;
+   
+   // Copy flash data to DDR2 memory.
+   for(uint i=0; i < FLASH_BLOCKS * FLASH_BLOCK_SIZE; i++) {
+   
+      DDR_ADDRESS[i] = flash_read(i);
+      
+      // Update status bar.
+      if(i == cval) {
+         pbUpload.val++;
+         drawProgressBar(&wUpload, &pbUpload);
+         cval += step;
+      }
+   }    
 }
 
 
@@ -249,6 +285,7 @@ int main() {
                   break;
 
                case OPTION_START:
+                  load();
                   start();
                   break;
 

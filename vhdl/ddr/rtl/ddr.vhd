@@ -172,7 +172,7 @@ begin
    --       If this problem happens to be fixed someday, the following state 
    --       machine can be deleted and the Wishbone signals can be tied directly
    --       into the main state machine.   
-   wbone : process(w, si, init.done)
+   wbone : process(w, si, init.done, ddr_done)
    begin
       
       win <= w;
@@ -217,7 +217,7 @@ begin
    -- Main Controller                                                         --
    -----------------------------------------------------------------------------
    -- main : process(m, si, init)
-   main : process(m, init, read_wb, write_wb)
+   main : process(m, init, read_wb, write_wb, si.adr)
    begin
 
       min <= m;
