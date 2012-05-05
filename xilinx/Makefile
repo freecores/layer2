@@ -25,12 +25,12 @@ BITGEN = $(TOOL_DIR)bitgen.exe
 IMPACT = $(TOOL_DIR)impact.exe
 
 upload : layer2.bit
-	$(IMPACT) -batch impact.cmds
+	$(IMPACT) -batch upload.cmds
 
-.PHONY: build
-build : layer2.bit
+prom : layer2.bit  
+	$(IMPACT) -batch prom.cmds
    
-layer2.bit : 
+build : 
 	$(XST) -ifn layer2.xst -ofn layer2.syr -intstyle ise
 	$(NGDBUILD) -intstyle ise -dd ngdbuild -nt timestamp -uc layer2.ucf \
 		-p xc3s500e-fg320-4 layer2.ngc layer2.ngd 
@@ -45,4 +45,4 @@ layer2.bit :
 clean :
 	-@$(RM) *.bgn *.bld *.drc *.cmd_log *.lso *.ncd *.ngc *.ngd *.ngr *.pad \
 		*.par *.pcf *.ptwx *.stx *.syr *.twr *.twx *.unroutes *.xpi *.xwbt \
-		*.map *.mrp *.xrpt *.csv *.txt *.xml *.html *.log *.ngm
+		*.map *.mrp *.xrpt *.csv *.txt *.xml *.html *.log *.ngm *.prm *.cfi *.sig

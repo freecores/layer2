@@ -1,5 +1,5 @@
-setmode -bs
-setcable -p auto
+setMode -bs
+setCable -p auto
 identify
 assignFile -p 1 -file layer2.bit
 program -p 1

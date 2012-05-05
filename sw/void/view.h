@@ -1,5 +1,5 @@
 /******************************************************************************
- * void - Bootloader Version 0.2.1                                            *
+ * void - Bootloader Version 0.2.2                                            *
  ******************************************************************************
  * Copyright (C)2011  Mathias Hörtnagl <mathias.hoertnagl@gmail.com>          *
  *                                                                            *
@@ -163,7 +163,7 @@ Menu menu = {
 Window wBoot = {
    {25, 12, 50, 7},
    {WHITE, BLACK},
-   "void Bootloader v0.2.1",
+   "void Bootloader v0.2.2",
    1,
    { &menu }
 };

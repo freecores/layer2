@@ -1,5 +1,5 @@
 /******************************************************************************
- * void - Bootloader Version 0.2.1                                            *
+ * void - Bootloader Version 0.2.2                                            *
  ******************************************************************************
  * Copyright (C)2011  Mathias Hörtnagl <mathias.hoertnagl@gmail.com>          *
  *                                                                            *
@@ -23,16 +23,31 @@
 #include "view.h"
 
 #define DDR_ADDRESS ((volatile uint *) 0x20000000)
-#define NUM_OF_WORDS 77
 
 /******************************************************************************
  * Upload View                                                                *
  ******************************************************************************/
+/* Wait until a flash write is completed and check for errors. */
+void checkFlashWrite() {
+
+   uchar state;         // Flash state.
+   
+   // Error checking.
+   state = flash_wait();
+   if(state & FLASH_BLOCK_LOCKED) {
+      drawErrorWindow(&errErrorFlashLocked);
+      return 0;
+   }
+   if(state & FLASH_PROGRAM_ERROR) {
+      drawErrorWindow(&errErrorFlashWrite);
+      return 0;
+   }      
+} 
+
 /* NOTE: Automatic deduction of the number of blocks, that need to be erased 
          has not been tested extensive. */
 void upload() {
 
-   uchar state;         // Flash state.
    uint size;           // Image size.
    uint step;           // Progress bar step size.
    uint cval;           // Current progress value.
@@ -79,12 +94,12 @@ void upload() {
          return 0;
       }
    }
-
-   // Echoing received image size.
-   rs232_transmit(size >> 24);
-   rs232_transmit(size >> 16);
-   rs232_transmit(size >> 8);
-   rs232_transmit(size);
+   
+   // Write image size at flash address 0x0.
+   for(uchar i=0; i<4; i++) {
+      flash_write(i, size >> ((3-i) * 8) );
+      checkFlashWrite();
+   }
 
    // Upload data.
    drawMessage(&wUpload, &msgUploadWrite);
@@ -92,9 +107,14 @@ void upload() {
    step = size / 64;                         // Calculate progress step size.
    cval = step;
 
+   // Echoing received image size.
+   for(uchar i=0; i<4; i++) {
+      rs232_transmit( size >> ((3-i) * 8) );
+   }
+   
    // Write each single byte to Flash.
    for(uint i=0; i < size; i++) {
-      flash_write(i, rs232_receive());
+      flash_write(i + 4, rs232_receive());
 
       // Update status bar.
       if(i == cval) {
@@ -103,23 +123,8 @@ void upload() {
          cval += step;
       }
 
-      // Error checking.
-      state = flash_wait();
-      if(state & FLASH_BLOCK_LOCKED) {
-         drawErrorWindow(&errErrorFlashLocked);
-         return 0;
-      }
-      if(state & FLASH_PROGRAM_ERROR) {
-         drawErrorWindow(&errErrorFlashWrite);
-         return 0;
-      }
+      checkFlashWrite();
    }
-   
-   // Copy flash data to DDR2 memory.
-   // NOTE: Missing bytes, if binary file is not 4 bytes aligned.
-   // for(uint i=0; i < (size / 4) /* + 1 */; i++) {
-      // DDR_ADDRESS[i] = flash_read(i);
-   // }
 
    // Go back to main menu.
    boot();
@@ -129,8 +134,13 @@ void upload() {
 /******************************************************************************
  * DDR Load View                                                              *
  ******************************************************************************/
-/* Load Flash contents into DDR. */
-void load() {
+/* Load Flash contents into DDR. 
+   
+   Input:
+      start    Image start address on flash.
+      size     Image size.
+ */
+void load(uint start, uint size) {
 
    uint step;           // Progress bar step size.
    uint cval;           // Current progress value.
@@ -144,13 +154,14 @@ void load() {
    pbUpload.val = 0;   
    drawProgressBar(&wDDRUpload, &pbUpload);
    
-   step = FLASH_BLOCK_SIZE * 2;
+   step = size / 64;
    cval = step;
    
    // Copy flash data to DDR2 memory.
-   for(uint i=0; i < FLASH_BLOCKS * FLASH_BLOCK_SIZE; i++) {
+   // NOTE: Missing bytes, if binary file is not 4 bytes aligned.
+   for(uint i=0; i < (size / 4); i++) {
    
-      DDR_ADDRESS[i] = flash_read(i);
+      DDR_ADDRESS[i] = flash_read(i + start);
       
       // Update status bar.
       if(i == cval) {
@@ -165,6 +176,7 @@ void load() {
 /******************************************************************************
  * Memory View                                                                *
  ******************************************************************************/
+#define NUM_OF_WORDS 77
 /* TODO: Cleaner generic version.
    Quick and dirty implementation of an memory matrix view. Shows the next
    'NUM_OF_WORDS' starting at location 'adr' of the Flash and the DDR memory
@@ -240,12 +252,14 @@ void view_memories() {
  ******************************************************************************/
 /* Wait for completed flash initialization. Set up main menu box. */
 int main() {
-
+   
+   uchar s;
+   
    // Clear screen.
    cls();
 
    // Wait for flash hardware initialization end.
-   uchar s = flash_wait();
+   s = flash_wait();
 
    // Flash not ready.
    if( !(s & FLASH_READY) ) {
@@ -285,7 +299,7 @@ int main() {
                   break;
 
                case OPTION_START:
-                  load();
+                  load(1, flash_read(0));
                   start();
                   break;
 
