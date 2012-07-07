@@ -72,7 +72,7 @@ Message msgUploadErase = {
 Message msgUploadWait = {
    ID_MESSAGE,
    {0,0},
-   "Waiting for incomming transmission ..."
+   "Waiting for incoming transmission ..."
 };
 
 Message msgUploadWrite = {
