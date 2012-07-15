@@ -31,6 +31,8 @@ prom : layer2.bit
 	$(IMPACT) -batch prom.cmds
    
 build : 
+	-@mkdir xst
+	-@mkdir xst/projnav.tmp
 	$(XST) -ifn layer2.xst -ofn layer2.syr -intstyle ise
 	$(NGDBUILD) -intstyle ise -dd ngdbuild -nt timestamp -uc layer2.ucf \
 		-p xc3s500e-fg320-4 layer2.ngc layer2.ngd 
